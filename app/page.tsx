@@ -33,6 +33,7 @@ export default function SearchPage() {
   const [minimumHotelPrice, setMinimumHotelPrice] = useState('');
   const [maximumHotelPrice, setMaximumHotelPrice] = useState('');
   const [sortOrder, setSortOrder] = useState<'price-asc' | 'price-desc'>('price-asc');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchValidationErrors, setSearchValidationErrors] = useState<Record<string, string>>({});
@@ -80,6 +81,7 @@ export default function SearchPage() {
     setMinimumHotelPrice('');
     setMaximumHotelPrice('');
     setSortOrder('price-asc');
+    setIsFilterOpen(false);
     setSelectedHotel(null);
     setShowQuotation(false);
     setQuotationResult(null);
@@ -228,7 +230,7 @@ export default function SearchPage() {
     setShowQuotation(false);
   };
 
-  if (showQuotation && quotationResult) {
+  if (showQuotation && quotationResult && !selectedHotel) {
     return (
       <div className="min-h-screen bg-brand-light">
         <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
@@ -252,6 +254,9 @@ export default function SearchPage() {
             searchParams={searchParams} 
             onCalculate={handleCalculate} 
             onBack={handleBackToSearch} 
+            quotationResult={quotationResult}
+            isSaved={activeSavedQuotationId !== null}
+            onToggleSaved={handleToggleSavedQuotation}
           />
         </div>
       </div>
@@ -332,77 +337,91 @@ export default function SearchPage() {
               </div>
               <p className="text-sm text-brand-muted" role="status" aria-live="polite">{visibleHotels.length} dari {hotels.length} hotel</p>
             </div>
-            <div className="grid grid-cols-1 gap-4 rounded-lg border border-brand-border bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <label htmlFor="hotelNameFilter" className="form-label">Nama hotel</label>
-                <input
-                  id="hotelNameFilter"
-                  type="search"
-                  value={hotelNameFilter}
-                  onChange={(event) => setHotelNameFilter(event.target.value)}
-                  placeholder="Cari nama hotel"
-                  className="form-control"
-                />
-              </div>
-              <div>
-                <label htmlFor="minimumHotelPrice" className="form-label">Harga minimum (SAR/malam)</label>
-                <input
-                  id="minimumHotelPrice"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={minimumHotelPrice}
-                  onChange={(event) => setMinimumHotelPrice(event.target.value)}
-                  className="form-control"
-                  aria-invalid={invalidPriceRange}
-                  aria-describedby={invalidPriceRange ? 'hotel-price-error' : undefined}
-                />
-              </div>
-              <div>
-                <label htmlFor="maximumHotelPrice" className="form-label">Harga maksimum (SAR/malam)</label>
-                <input
-                  id="maximumHotelPrice"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={maximumHotelPrice}
-                  onChange={(event) => setMaximumHotelPrice(event.target.value)}
-                  className="form-control"
-                  aria-invalid={invalidPriceRange}
-                  aria-describedby={invalidPriceRange ? 'hotel-price-error' : undefined}
-                />
-              </div>
-              <div>
-                <label htmlFor="hotelSortOrder" className="form-label">Urutkan harga</label>
-                <select
-                  id="hotelSortOrder"
-                  value={sortOrder}
-                  onChange={(event) => setSortOrder(event.target.value as 'price-asc' | 'price-desc')}
-                  className="form-control"
-                >
-                  <option value="price-asc">Termurah lebih dulu</option>
-                  <option value="price-desc">Termahal lebih dulu</option>
-                </select>
-              </div>
-              {invalidPriceRange && (
-                <p id="hotel-price-error" className="form-error sm:col-span-2 lg:col-span-4" role="alert">
-                  Harga minimum harus kurang dari atau sama dengan harga maksimum.
-                </p>
+            <div className="sticky top-2 z-10 rounded-lg border border-brand-border bg-white p-4 shadow-sm">
+              <button
+                type="button"
+                className={`flex w-full items-center justify-between gap-4 text-left font-semibold ${isFilterOpen ? 'text-brand-primary-dark' : 'text-brand-dark'}`}
+                onClick={() => setIsFilterOpen((isOpen) => !isOpen)}
+                aria-expanded={isFilterOpen}
+                aria-controls="hotel-filters"
+              >
+                <span>Filter dan urutkan</span>
+                <span aria-hidden="true" className="text-xl leading-none">{isFilterOpen ? '−' : '+'}</span>
+              </button>
+              {isFilterOpen && (
+                <div id="hotel-filters" className="mt-4 grid grid-cols-1 gap-4 border-t border-brand-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <label htmlFor="hotelNameFilter" className="form-label">Nama hotel</label>
+                    <input
+                      id="hotelNameFilter"
+                      type="search"
+                      value={hotelNameFilter}
+                      onChange={(event) => setHotelNameFilter(event.target.value)}
+                      placeholder="Cari nama hotel"
+                      className="form-control"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="minimumHotelPrice" className="form-label">Harga minimum (SAR/malam)</label>
+                    <input
+                      id="minimumHotelPrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={minimumHotelPrice}
+                      onChange={(event) => setMinimumHotelPrice(event.target.value)}
+                      className="form-control"
+                      aria-invalid={invalidPriceRange}
+                      aria-describedby={invalidPriceRange ? 'hotel-price-error' : undefined}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="maximumHotelPrice" className="form-label">Harga maksimum (SAR/malam)</label>
+                    <input
+                      id="maximumHotelPrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={maximumHotelPrice}
+                      onChange={(event) => setMaximumHotelPrice(event.target.value)}
+                      className="form-control"
+                      aria-invalid={invalidPriceRange}
+                      aria-describedby={invalidPriceRange ? 'hotel-price-error' : undefined}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="hotelSortOrder" className="form-label">Urutkan harga</label>
+                    <select
+                      id="hotelSortOrder"
+                      value={sortOrder}
+                      onChange={(event) => setSortOrder(event.target.value as 'price-asc' | 'price-desc')}
+                      className="form-control"
+                    >
+                      <option value="price-asc">Termurah lebih dulu</option>
+                      <option value="price-desc">Termahal lebih dulu</option>
+                    </select>
+                  </div>
+                  {invalidPriceRange && (
+                    <p id="hotel-price-error" className="form-error sm:col-span-2 lg:col-span-4" role="alert">
+                      Harga minimum harus kurang dari atau sama dengan harga maksimum.
+                    </p>
+                  )}
+                  <div className="flex items-end sm:col-span-2 lg:col-span-4">
+                    <button
+                      type="button"
+                      className="button-quiet"
+                      onClick={() => {
+                        setHotelNameFilter('');
+                        setMinimumHotelPrice('');
+                        setMaximumHotelPrice('');
+                        setSortOrder('price-asc');
+                      }}
+                    >
+                      Reset filter
+                    </button>
+                  </div>
+                </div>
               )}
-              <div className="flex items-end sm:col-span-2 lg:col-span-4">
-                <button
-                  type="button"
-                  className="button-quiet"
-                  onClick={() => {
-                    setHotelNameFilter('');
-                    setMinimumHotelPrice('');
-                    setMaximumHotelPrice('');
-                    setSortOrder('price-asc');
-                  }}
-                >
-                  Reset filter
-                </button>
-              </div>
             </div>
             {visibleHotels.length > 0 ? (
               <div className="space-y-3">

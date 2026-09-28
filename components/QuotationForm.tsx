@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
 import { Hotel } from '@/types/hotel';
-import { ExchangeRateResponse, QuotationInput } from '@/types/quotation';
+import { ExchangeRateResponse, QuotationBreakdown, QuotationInput } from '@/types/quotation';
 import { formatCurrencyDraft, formatNumberInput, parseCurrencyInput } from '@/lib/currencyInput';
+import { formatCurrency } from '@/lib/quotationCalculator';
 
 type QuotationValues = Omit<QuotationInput, 'hotel' | 'pax' | 'roomType' | 'checkIn' | 'checkOut'>;
 type QuotationAmountField = keyof QuotationValues;
@@ -23,9 +24,20 @@ interface QuotationFormProps {
   };
   onCalculate: (input: QuotationInput) => Promise<QuotationApiResponse>;
   onBack: () => void;
+  quotationResult: QuotationBreakdown | null;
+  isSaved: boolean;
+  onToggleSaved: () => void;
 }
 
-export default function QuotationForm({ hotel, searchParams, onCalculate, onBack }: QuotationFormProps) {
+export default function QuotationForm({
+  hotel,
+  searchParams,
+  onCalculate,
+  onBack,
+  quotationResult,
+  isSaved,
+  onToggleSaved,
+}: QuotationFormProps) {
   const [formData, setFormData] = useState<QuotationValues>({
     hotelTaxPercentage: hotel.taxPercentage || 0,
     exchangeRate: 0,
@@ -49,10 +61,18 @@ export default function QuotationForm({ hotel, searchParams, onCalculate, onBack
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const [rateError, setRateError] = useState<string | null>(null);
   const [rateSource, setRateSource] = useState<string>('');
+  const resultRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     loadExchangeRate();
   }, []);
+
+  useEffect(() => {
+    if (!quotationResult) return;
+    requestAnimationFrame(() => {
+      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [quotationResult]);
 
   const loadExchangeRate = async () => {
     setIsLoadingRate(true);
@@ -135,10 +155,66 @@ export default function QuotationForm({ hotel, searchParams, onCalculate, onBack
       </section>
 
       <form onSubmit={handleSubmit} className="space-y-8 border-t border-brand-dark/15 pt-7">
-        <div className="grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
+        <div className="sticky top-0 z-30 -mx-4 border-b border-brand-dark/15 bg-brand-light/95 px-4 py-3 shadow-[0_4px_12px_rgba(39,39,39,0.08)] backdrop-blur-sm sm:-mx-6 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={onBack}
+              className="button-secondary w-full sm:w-auto"
+            >
+              BATAL
+            </button>
+            <button
+              type="submit"
+              className="button-primary w-full flex-1"
+              disabled={isCalculating}
+            >
+              {isCalculating ? 'Menghitung...' : 'HITUNG QUOTATION'}
+            </button>
+          </div>
+        </div>
+
+        {quotationResult && (
+          <section ref={resultRef} className="scroll-mt-28 border-y border-brand-border bg-white" aria-labelledby="quotation-result-heading" aria-live="polite">
+            <div className="border-b-4 border-brand-primary bg-brand-secondary px-5 py-6 text-white sm:px-7">
+              <p className="text-xs font-semibold tracking-wide text-brand-primary">HASIL QUOTATION</p>
+              <h3 id="quotation-result-heading" className="mt-1 text-xl font-semibold">Harga jual per jamaah</h3>
+              <p className="mt-2 break-words text-3xl font-semibold leading-tight sm:text-4xl">
+                {formatCurrency(quotationResult.hargaJualPerPax, 'IDR')}
+              </p>
+              <p className="mt-2 text-sm text-white/80">Hasil terbaru dari nilai input yang dikirim.</p>
+            </div>
+            <div className="grid gap-6 px-5 py-5 sm:px-7 md:grid-cols-[1.2fr_0.8fr]">
+              <div>
+                <div className="flex items-center justify-between gap-4 border-b border-brand-dark/15 pb-3">
+                  <h4 className="font-semibold">Rincian biaya</h4>
+                  <p className="text-sm text-brand-muted">1 SAR = {formatCurrency(quotationResult.exchangeRate, 'IDR')}</p>
+                </div>
+                <dl className="divide-y divide-brand-dark/10 text-sm">
+                  <div className="flex justify-between gap-4 py-3"><dt className="text-brand-muted">Hotel ({quotationResult.rooms} kamar, {quotationResult.nights} malam)</dt><dd className="font-semibold">{formatCurrency(quotationResult.totalHotelIDR, 'IDR')}</dd></div>
+                  <div className="flex justify-between gap-4 py-3"><dt className="text-brand-muted">Visa ({quotationResult.pax} jamaah)</dt><dd className="font-semibold">{formatCurrency(quotationResult.totalVisaIDR, 'IDR')}</dd></div>
+                  <div className="flex justify-between gap-4 py-3"><dt className="text-brand-muted">Transport</dt><dd className="font-semibold">{formatCurrency(quotationResult.transportTotalIDR, 'IDR')}</dd></div>
+                  <div className="flex justify-between gap-4 border-t-2 border-brand-dark py-3"><dt className="font-semibold">Total biaya paket</dt><dd className="font-semibold">{formatCurrency(quotationResult.totalCostIDR, 'IDR')}</dd></div>
+                </dl>
+              </div>
+              <aside className="self-start border-t-2 border-brand-primary bg-brand-tint p-5" aria-label="Ringkasan quotation">
+                <dl className="divide-y divide-brand-dark/15 text-sm">
+                  <div className="flex justify-between gap-4 py-3"><dt className="text-brand-muted">Biaya per jamaah</dt><dd className="text-right font-semibold">{formatCurrency(quotationResult.costPerPaxIDR, 'IDR')}</dd></div>
+                  <div className="flex justify-between gap-4 py-3"><dt className="text-brand-muted">Margin per jamaah</dt><dd className="text-right font-semibold">{formatCurrency(quotationResult.marginPerPaxIDR, 'IDR')}</dd></div>
+                  <div className="flex justify-between gap-4 py-3"><dt className="text-brand-muted">Tax hotel</dt><dd className="text-right font-semibold">{quotationResult.taxPercentage}%</dd></div>
+                </dl>
+                <button type="button" onClick={onToggleSaved} className="button-secondary mt-4 w-full">
+                  {isSaved ? 'Hapus dari tersimpan' : 'Simpan quotation'}
+                </button>
+              </aside>
+            </div>
+          </section>
+        )}
+
+        <section aria-labelledby="exchange-rate-heading" className="grid gap-8 md:grid-cols-[0.8fr_1.2fr]">
           <div>
             <p className="text-xs font-semibold text-brand-primary-dark">KONVERSI</p>
-            <label htmlFor="exchangeRate" className="mt-2 block text-base font-semibold text-brand-dark">
+            <label id="exchange-rate-heading" htmlFor="exchangeRate" className="mt-2 block text-base font-semibold text-brand-dark">
               Kurs SAR <span aria-hidden="true">→</span> IDR <span className="text-brand-primary-dark">*</span>
             </label>
             <p className="mt-1 text-sm leading-5 text-brand-muted">Semua biaya pada hasil quotation dihitung dan ditampilkan dalam IDR.</p>
@@ -173,14 +249,13 @@ export default function QuotationForm({ hotel, searchParams, onCalculate, onBack
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="border-t border-brand-dark/15 pt-6">
-          <h3 className="font-sans text-xl font-semibold text-brand-dark">Rincian biaya</h3>
-          <p className="mt-1 text-sm text-brand-muted">Tax hotel dapat disesuaikan untuk kebutuhan quotation ini.</p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+        <section className="space-y-5" aria-labelledby="sar-cost-heading">
+          <div className="border-t border-brand-dark/15 pt-5">
+            <h3 id="sar-cost-heading" className="text-xs font-semibold tracking-wide text-brand-primary-dark">BIAYA (SAR)</h3>
+          </div>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-3">
           <div>
             <label htmlFor="hotelTaxPercentage" className="form-label">
               Tax Hotel (%)
@@ -234,7 +309,14 @@ export default function QuotationForm({ hotel, searchParams, onCalculate, onBack
             />
             {errors.transportTotalSAR && <p id="transportTotalSAR-error" className="form-error">{errors.transportTotalSAR}</p>}
           </div>
+          </div>
+        </section>
 
+        <section className="space-y-5" aria-labelledby="idr-cost-heading">
+          <div className="border-t border-brand-dark/15 pt-5">
+            <h3 id="idr-cost-heading" className="text-xs font-semibold tracking-wide text-brand-primary-dark">BIAYA (IDR)</h3>
+          </div>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
           <div>
             <label htmlFor="ticketPerPaxIDR" className="form-label">
               Tiket Pesawat per Pax (IDR)
@@ -270,24 +352,9 @@ export default function QuotationForm({ hotel, searchParams, onCalculate, onBack
             />
             {errors.marginPerPaxIDR && <p id="marginPerPaxIDR-error" className="form-error">{errors.marginPerPaxIDR}</p>}
           </div>
-        </div>
+          </div>
+        </section>
 
-        <div className="flex flex-col-reverse gap-3 border-t border-brand-dark/15 pt-6 sm:flex-row sm:justify-end">
-          <button
-            type="submit"
-            className="button-primary"
-            disabled={isCalculating}
-          >
-            {isCalculating ? 'Menghitung...' : 'HITUNG QUOTATION'}
-          </button>
-          <button
-            type="button"
-            onClick={onBack}
-            className="button-secondary"
-          >
-            BATAL
-          </button>
-        </div>
         {calculationError && (
           <p className="border-l-2 border-red-700 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
             {calculationError}
