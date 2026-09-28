@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Poppins', sans-serif;
+  --color-brand-primary: #D7AF57;
+  --color-brand-primary-dark: #B48E3F;
+  --color-brand-secondary: #353535;
+  --color-brand-dark: #272727;
+  --color-brand-light: #FDFFFC;
+  --color-brand-muted: #6b7280;
+  --color-brand-border: #e6e4dd;
+  --color-brand-tint: #faf7ef;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-brand-light);
+  color: var(--color-brand-dark);
+  font-family: 'Poppins', sans-serif;
+}
+
+@layer components {
+  .form-label {
+    @apply mb-2 block text-sm font-semibold text-brand-dark;
+  }
+
+  .form-control {
+    @apply w-full rounded-lg border border-brand-border bg-white px-4 py-3 text-brand-dark outline-none transition placeholder:text-brand-muted focus:border-brand-primary-dark focus:ring-2 focus:ring-brand-primary/30;
+  }
+
+  .form-control[aria-invalid="true"] {
+    @apply border-red-600 focus:border-red-600 focus:ring-red-600/20;
+  }
+
+  .form-error {
+    @apply mt-1 text-sm text-red-700;
+  }
+
+  .button-primary {
+    @apply inline-flex min-h-12 items-center justify-center rounded-lg bg-brand-primary px-6 py-3 text-sm font-semibold text-brand-dark transition hover:bg-brand-primary-dark focus:outline-none focus:ring-2 focus:ring-brand-primary-dark focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .button-secondary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-border px-4 py-2.5 text-sm font-semibold text-brand-secondary transition hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-brand-primary-dark disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .button-quiet {
+    @apply text-sm font-semibold text-brand-primary-dark underline-offset-4 transition hover:underline focus:outline-none focus:ring-2 focus:ring-brand-primary/50;
+  }
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
