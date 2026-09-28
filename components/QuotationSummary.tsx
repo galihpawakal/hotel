@@ -100,6 +100,10 @@ export default function QuotationSummary({ data, onNewQuotation, isSaved, onTogg
               <dt className="text-brand-muted">Kurs konversi</dt>
               <dd className="text-right font-semibold">1 SAR = {formatCurrency(data.exchangeRate, 'IDR')}</dd>
             </div>
+            <div className="flex justify-between gap-4 py-3">
+              <dt className="text-brand-muted">Tax hotel</dt>
+              <dd className="text-right font-semibold">{data.taxPercentage}%</dd>
+            </div>
           </dl>
           <div className="mt-3 border-t border-brand-dark/20 pt-4">
             <p className="text-xs font-semibold text-brand-muted">HARGA JUAL / JAMAAH</p>

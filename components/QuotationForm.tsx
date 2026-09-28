@@ -27,6 +27,7 @@ interface QuotationFormProps {
 
 export default function QuotationForm({ hotel, searchParams, onCalculate, onBack }: QuotationFormProps) {
   const [formData, setFormData] = useState<QuotationValues>({
+    hotelTaxPercentage: hotel.taxPercentage || 0,
     exchangeRate: 0,
     visaPerPaxSAR: 0,
     transportTotalSAR: 0,
@@ -34,6 +35,7 @@ export default function QuotationForm({ hotel, searchParams, onCalculate, onBack
     marginPerPaxIDR: 0,
   });
   const [displayValues, setDisplayValues] = useState<Record<QuotationAmountField, string>>({
+    hotelTaxPercentage: formatNumberInput(hotel.taxPercentage || 0, true),
     exchangeRate: '',
     visaPerPaxSAR: '',
     transportTotalSAR: '',
@@ -175,10 +177,28 @@ export default function QuotationForm({ hotel, searchParams, onCalculate, onBack
 
         <div className="border-t border-brand-dark/15 pt-6">
           <h3 className="font-sans text-xl font-semibold text-brand-dark">Rincian biaya</h3>
-          <p className="mt-1 text-sm text-brand-muted">SAR/kurs: 4.772,77 · IDR: 1.250.000. Hasil akhir dikonversi ke IDR.</p>
+          <p className="mt-1 text-sm text-brand-muted">Tax hotel dapat disesuaikan untuk kebutuhan quotation ini.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="hotelTaxPercentage" className="form-label">
+              Tax Hotel (%)
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              id="hotelTaxPercentage"
+              name="hotelTaxPercentage"
+              value={displayValues.hotelTaxPercentage}
+              onChange={handleChange}
+              className="form-control"
+              aria-invalid={Boolean(errors.hotelTaxPercentage)}
+              aria-describedby={errors.hotelTaxPercentage ? 'hotelTaxPercentage-error' : undefined}
+            />
+            {errors.hotelTaxPercentage && <p id="hotelTaxPercentage-error" className="form-error">{errors.hotelTaxPercentage}</p>}
+          </div>
+
           <div>
             <label htmlFor="visaPerPaxSAR" className="form-label">
               Visa per Pax (SAR)

@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ errors: { hotel: 'Hotel tidak ditemukan' } }, { status: 400 });
   }
 
-  const authoritativeInput = { ...input, hotel };
+  const authoritativeInput = {
+    ...input,
+    hotel: { ...hotel, taxPercentage: input.hotelTaxPercentage },
+  };
   const validation = validateQuotationInput(authoritativeInput);
   if (!validation.isValid) {
     return NextResponse.json({ errors: validation.errors }, { status: 400 });

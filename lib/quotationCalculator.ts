@@ -4,7 +4,7 @@ import { calculateRooms, calculateNights, calculateTotalHotelSAR } from './roomC
 export function calculateQuotation(input: QuotationInput): QuotationBreakdown {
   const rooms = calculateRooms(input.pax, input.roomType);
   const nights = calculateNights(input.checkIn, input.checkOut);
-  const taxPercentage = input.hotel.taxPercentage || 0;
+  const taxPercentage = input.hotelTaxPercentage;
 
   const totalHotelSAR = calculateTotalHotelSAR(rooms, nights, input.hotel.pricePerNight, taxPercentage);
   const totalHotelIDR = Math.round(totalHotelSAR * input.exchangeRate);

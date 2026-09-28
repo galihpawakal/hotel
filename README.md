@@ -89,6 +89,7 @@ npm run lint
 
 ### 3. Quotation Form
 - Kurs SAR→IDR: auto-fetch dari API eksternal (dengan fallback manual)
+- Tax hotel (%): terisi dari data hotel dan dapat diubah untuk quotation aktif (0–100%)
 - Visa per pax (SAR)
 - Transport total (SAR)
 - Tiket pesawat per pax (IDR)
@@ -109,7 +110,7 @@ hargaJualPerPax = costPerPaxIDR + marginPerPaxIDR
 
 Quotation dihitung oleh `POST /api/quotation`; hasilnya bisa disimpan, dibuka kembali, atau dihapus dari localStorage browser.
 
-### 5. Validasi
+### 6. Validasi
 - Pax > 0
 - Check-out > Check-in
 - Kurs > 0
@@ -154,8 +155,14 @@ Response:
 }
 ```
 
-### Simulasi Mock API (development saja)
-Atur `MOCK_HOTELS_DELAY_MS` untuk menunda respons (maksimum 10 detik), atau `MOCK_HOTELS_FAIL=true` untuk mengembalikan error 503. Kedua mode hanya aktif ketika `NODE_ENV` bukan production.
+### 5. Error handling saat Mock API gagal
+
+Route `POST /api/hotels` menangani kegagalan Mock API tanpa membuat halaman blank atau crash. Frontend mempertahankan parameter pencarian, menampilkan pesan error yang dapat diakses, dan menyediakan tombol `Coba lagi` untuk mengulangi request terakhir. Respons sukses tanpa hotel tetap ditampilkan sebagai empty state, bukan error server.
+
+Untuk menguji kondisi ini secara lokal, atur environment variable berikut. Keduanya hanya aktif ketika `NODE_ENV` bukan production:
+
+- `MOCK_HOTELS_DELAY_MS`: menunda respons selama nilai dalam milidetik, maksimal 10 detik. Gunakan untuk memeriksa loading state dan tombol pencarian yang nonaktif selama request.
+- `MOCK_HOTELS_FAIL=true`: mengembalikan HTTP 503 dengan pesan simulasi kegagalan. Gunakan untuk memeriksa alert error dan aksi retry.
 
 PowerShell contoh:
 ```powershell
@@ -164,20 +171,24 @@ $env:MOCK_HOTELS_FAIL = 'true'
 npm run dev
 ```
 
-## Deployment (Vercel)
+Hapus atau ubah variable tersebut lalu restart dev server untuk kembali ke respons normal. Pada Vercel, simulasi ini otomatis tidak aktif karena deployment berjalan dalam mode production.
+
+## 7. Deployment (Vercel)
+
+Live demo: https://hotel-brown-eight.vercel.app/
 
 1. Push ke GitHub
 2. Import project di Vercel
 3. Deploy otomatis
 
-## Technical Interview Ready
+## 8. Technical Interview Ready
 
 Kode siap untuk perubahan:
 1. **Tambah tipe kamar "Quint"** - Tambah entry di `ROOM_CAPACITY` map
-2. **Tax hotel 15%** - Tambah `taxPercentage` di response `/api/hotels`
+2. **Tax hotel 15%** - Ubah field `Tax Hotel (%)` pada form quotation; server memvalidasi nilai 0–100 dan memasukkannya ke total hotel sebelum konversi kurs
 3. **Supplier kedua** - Abstraksi `HotelProvider` interface
 
-## Testing
+## 9. Testing
 
 Unit test cases untuk validasi:
 - 8 pax Quad → 2 kamar

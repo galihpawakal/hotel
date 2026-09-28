@@ -79,6 +79,10 @@ export function validateQuotationInput(input: QuotationInput): ValidationResult 
     errors.exchangeRate = 'Kurs SAR ke IDR harus diisi dan lebih dari 0';
   }
 
+  if (!Number.isFinite(input.hotelTaxPercentage) || input.hotelTaxPercentage < 0 || input.hotelTaxPercentage > 100) {
+    errors.hotelTaxPercentage = 'Tax hotel harus berupa persentase antara 0 dan 100';
+  }
+
   if (!Number.isFinite(input.visaPerPaxSAR) || input.visaPerPaxSAR < 0) {
     errors.visaPerPaxSAR = 'Visa per pax tidak boleh negatif';
   }

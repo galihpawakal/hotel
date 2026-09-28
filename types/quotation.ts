@@ -6,6 +6,7 @@ export interface QuotationInput {
   roomType: 'Double' | 'Triple' | 'Quad' | 'Quint';
   checkIn: string;
   checkOut: string;
+  hotelTaxPercentage: number;
   exchangeRate: number;
   visaPerPaxSAR: number;
   transportTotalSAR: number;
